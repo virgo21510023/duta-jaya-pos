@@ -24,13 +24,23 @@
             <td>
               <div class="fw-bold">{{ product.name }}</div>
               <small class="text-muted">{{ product.product_code || 'Tanpa Kode' }}</small>
+              
+              <!-- V-- PERBAIKAN TAMPILAN STOK --V -->
+              <div :class="product.stock_quantity > 0 ? 'text-muted' : 'text-danger fw-bold'">
+                Stok: {{ parseInt(product.stock_quantity) }} {{ product.unit }}
+              </div>
             </td>
             <td class="text-end fw-bold">
               {{ formatRupiah(product.base_price) }}
             </td>
             <td class="text-center" style="width: 120px;">
-              <button class="btn btn-success w-100" @click="addToCart(product)">
-                Tambah
+              <button 
+                class="btn w-100"
+                :class="product.stock_quantity > 0 ? 'btn-success' : 'btn-secondary'"
+                :disabled="product.stock_quantity <= 0"
+                @click="addToCart(product)"
+              >
+                {{ product.stock_quantity > 0 ? 'Tambah' : 'Stok Habis' }}
               </button>
             </td>
           </tr>
@@ -44,51 +54,33 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
-import productService from '../services/productService';
+import { ref, computed } from 'vue';
 import { useCartStore } from '../stores/cart.store';
 
-// -- State Lokal Komponen --
-const products = ref([]);
-const loading = ref(true);
-const error = ref(null);
-const searchQuery = ref('');
+const props = defineProps({
+  products: {
+    type: Array,
+    required: true,
+    default: () => []
+  },
+  loading: Boolean,
+  error: String,
+});
 
-// -- Menggunakan Store --
+const searchQuery = ref('');
 const cartStore = useCartStore();
 
-// -- Computed Property untuk Pencarian --
 const filteredProducts = computed(() => {
   if (!searchQuery.value) {
-    return products.value;
+    return props.products;
   }
-  return products.value.filter(product =>
+  return props.products.filter(product =>
     product.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
     (product.product_code && product.product_code.toLowerCase().includes(searchQuery.value.toLowerCase()))
   );
 });
 
-// -- Fungsi-Fungsi --
-async function fetchProducts() {
-  try {
-    loading.value = true;
-    const response = await productService.getProducts();
-    // API sekarang mengirim produk beserta tingkatan harganya (price_tiers)
-    products.value = response.data.sort((a, b) => a.name.localeCompare(b.name));
-  } catch (err) {
-    error.value = 'Gagal memuat daftar produk.';
-    console.error(err);
-  } finally {
-    loading.value = false;
-  }
-}
-
-// V-- PERBAIKAN UTAMA ADA DI SINI --V
 function addToCart(product) {
-  // V-- TAMBAHKAN BARIS INI --V
-  console.log('LANGKAH 1: Data dikirim dari ProductSearch:', product);
-  
-  // Baris ini sudah ada
   cartStore.addProduct(product);
 }
 
@@ -99,12 +91,6 @@ function formatRupiah(number) {
     minimumFractionDigits: 0
   }).format(number);
 }
-
-// -- Lifecycle Hook --
-onMounted(() => {
-  fetchProducts();
-});
-
 </script>
 
 <style scoped>

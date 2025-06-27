@@ -36,7 +36,8 @@
             <td>{{ product.product_code || '-' }}</td>
             <td>{{ product.name }}</td>
             <td>{{ product.grade || 'N/A' }}</td>
-            <td>{{ product.stock_quantity }}</td>
+            <!-- V-- PERBAIKAN TAMPILAN STOK --V -->
+            <td>{{ parseInt(product.stock_quantity) }}</td>
             <td>{{ product.unit }}</td>
             <td>{{ formatRupiah(product.base_price) }}</td>
             <td class="text-center">
@@ -70,13 +71,13 @@
                   <div class="mb-3"><label for="unit" class="form-label">Satuan</label><input type="text" class="form-control" id="unit" v-model="newProduct.unit" required list="unit-list"><datalist id="unit-list"><option v-for="unit in unitOptions" :key="unit" :value="unit"></option></datalist></div>
                 </div>
                 <div class="col-md-6">
-                  <div class="mb-3"><label for="stock" class="form-label">Stok</label><input type="number" step="0.01" class="form-control" id="stock" v-model.number="newProduct.stock_quantity"></div>
+                  <div class="mb-3"><label for="stock" class="form-label">Stok</label><input type="number" step="1" class="form-control" id="stock" v-model.number="newProduct.stock_quantity"></div>
                   <div class="mb-3"><label for="hpp" class="form-label">Harga Pokok (HPP)</label><input type="text" class="form-control" id="hpp" v-model="formattedHpp" required></div>
                   <div class="mb-3"><label for="price" class="form-label">Harga Jual Dasar</label><input type="text" class="form-control" id="price" v-model="formattedBasePrice" required></div>
                 </div>
               </div>
 
-              <!-- Bagian baru untuk Harga Bertingkat (hanya muncul saat mode Edit) -->
+              <!-- Bagian untuk Harga Bertingkat -->
               <div v-if="editingProductId" class="mt-4">
                 <hr>
                 <h5>Pengelolaan Harga Bertingkat</h5>
@@ -114,7 +115,6 @@
 import { ref, onMounted, computed } from 'vue';
 import productService from '../services/productService';
 
-// State Reaktif
 const products = ref([]);
 const loading = ref(true);
 const error = ref(null);
@@ -125,7 +125,6 @@ const gradeOptions = ref([]);
 const newProduct = ref({});
 const editingProductId = ref(null);
 
-// Computed Properties
 const modalTitle = computed(() => editingProductId.value ? 'Edit Produk' : 'Tambah Produk Baru');
 
 const filteredProducts = computed(() => {
@@ -149,7 +148,6 @@ const formattedBasePrice = computed({
   set: (value) => { newProduct.value.base_price = parseRupiah(value); }
 });
 
-// Fungsi Logika Utama
 async function fetchProducts() {
   try {
     loading.value = true;
@@ -217,12 +215,18 @@ async function handleFormSubmit() {
   }
 }
 
-function confirmDelete(product) {
-  // Logika untuk hapus akan kita buat di langkah selanjutnya
-  alert(`Fitur Hapus untuk "${product.name}" akan dibuat selanjutnya!`);
+async function confirmDelete(product) {
+  if (window.confirm(`Apakah Anda yakin ingin menghapus "${product.name}"?`)) {
+    try {
+      await productService.deleteProduct(product.id);
+      alert('Produk berhasil dihapus.');
+      await fetchProducts();
+    } catch (err) {
+      alert(`Gagal menghapus produk: ${err.response?.data?.message || err.message}`);
+    }
+  }
 }
 
-// Fungsi untuk mengelola tingkatan harga
 function addTier() {
   if (!newProduct.value.price_tiers) {
     newProduct.value.price_tiers = [];
@@ -234,7 +238,6 @@ function removeTier(index) {
   newProduct.value.price_tiers.splice(index, 1);
 }
 
-// Lifecycle Hook
 onMounted(async () => {
   await fetchProducts();
   await fetchUniqueUnits();

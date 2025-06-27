@@ -1,14 +1,22 @@
+<!-- frontend/src/views/PosView.vue -->
 <template>
   <div class="container-fluid mt-4">
     <div class="row">
+      <!-- Kolom Kiri untuk Pencarian Produk -->
       <div class="col-md-7">
         <div class="card">
           <div class="card-body">
-            <ProductSearch />
+            <!-- V-- MELEMPAR DATA KE KOMPONEN ANAK --V -->
+            <ProductSearch 
+              :products="products"
+              :loading="loading"
+              :error="error"
+            />
           </div>
         </div>
       </div>
 
+      <!-- Kolom Kanan untuk Keranjang Belanja -->
       <div class="col-md-5">
          <div class="card">
           <div class="card-body">
@@ -19,6 +27,7 @@
     </div>
   </div>
 
+  <!-- Komponen Modal dan Nota -->
   <PaymentModal 
     v-if="isPaymentModalOpen"
     :show="isPaymentModalOpen" 
@@ -33,17 +42,37 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 import ProductSearch from '../components/ProductSearch.vue';
 import ShoppingCart from '../components/ShoppingCart.vue';
 import PaymentModal from '../components/PaymentModal.vue';
 import ReceiptTemplate from '../components/pos/ReceiptTemplate.vue';
 import { useCartStore } from '../stores/cart.store';
 import transactionService from '../services/transactionService';
+import productService from '../services/productService'; // <-- Impor service produk
 
 const cartStore = useCartStore();
 const isPaymentModalOpen = ref(false);
 const lastTransactionForPrint = ref(null);
+
+// V-- STATE DAN LOGIKA FETCH DIPINDAHKAN KE SINI --V
+const products = ref([]);
+const loading = ref(true);
+const error = ref(null);
+
+async function fetchProducts() {
+  try {
+    loading.value = true;
+    error.value = null;
+    const response = await productService.getProducts();
+    products.value = response.data;
+  } catch (err) {
+    error.value = 'Gagal memuat daftar produk.';
+    console.error(err);
+  } finally {
+    loading.value = false;
+  }
+}
 
 // -- Fungsi-fungsi untuk Pembayaran --
 function openPaymentModal() {
@@ -88,11 +117,20 @@ async function handleProcessTransaction(paymentData) {
 
     cartStore.clearCart();
     lastTransactionForPrint.value = null;
+
+    // V-- MUAT ULANG DATA PRODUK SETELAH TRANSAKSI BERHASIL --V
+    await fetchProducts();
+
   } catch (error) {
     console.error('Gagal menyimpan transaksi:', error);
     alert(`Transaksi Gagal: ${error.response?.data?.message || error.message}`);
   }
 }
+
+// -- Lifecycle Hook --
+onMounted(() => {
+  fetchProducts();
+});
 </script>
 
 <style scoped>
