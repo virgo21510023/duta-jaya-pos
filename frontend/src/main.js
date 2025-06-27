@@ -1,7 +1,7 @@
 // frontend/src/main.js
 
 import { createApp } from 'vue'
-import { createPinia } from 'pinia' // <-- 1. Impor createPinia
+import { createPinia } from 'pinia'
 
 import App from './App.vue'
 import router from './router'
@@ -9,10 +9,16 @@ import router from './router'
 import "bootstrap/dist/css/bootstrap.min.css"
 import "bootstrap"
 
-const app = createApp(App)
-const pinia = createPinia() // <-- 2. Buat instance Pinia
+// Impor store tema yang baru
+import { useThemeStore } from './stores/theme.store'
 
-app.use(pinia) // <-- 3. Beritahu aplikasi Vue untuk menggunakan Pinia
+const app = createApp(App)
+const pinia = createPinia()
+
+app.use(pinia)
 app.use(router)
+
+// Panggil store SETELAH pinia di-`use` oleh app
+const themeStore = useThemeStore();
 
 app.mount('#app')

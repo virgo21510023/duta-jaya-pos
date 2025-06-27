@@ -66,10 +66,11 @@
         </div>
       </div>
       
-      <!-- V-- KARTU BARU UNTUK METODE PEMBAYARAN --V -->
+      <!-- V-- PERBAIKAN PADA KARTU METODE PEMBAYARAN --V -->
       <div class="row mb-4">
         <div class="col-md-4">
-          <div class="card bg-light">
+          <!-- Mengganti bg-light dengan card biasa yang akan otomatis beradaptasi -->
+          <div class="card">
             <div class="card-body">
               <h6 class="card-title text-muted">TOTAL TUNAI (CASH)</h6>
               <p class="card-text fs-4 fw-bold">{{ formatRupiah(reportData.summary.paymentMethodTotals.cash) }}</p>
@@ -77,7 +78,7 @@
           </div>
         </div>
         <div class="col-md-4">
-          <div class="card bg-light">
+          <div class="card">
             <div class="card-body">
               <h6 class="card-title text-muted">TOTAL QRIS</h6>
               <p class="card-text fs-4 fw-bold">{{ formatRupiah(reportData.summary.paymentMethodTotals.qris) }}</p>
@@ -85,7 +86,7 @@
           </div>
         </div>
         <div class="col-md-4">
-          <div class="card bg-light">
+          <div class="card">
             <div class="card-body">
               <h6 class="card-title text-muted">TOTAL TRANSFER</h6>
               <p class="card-text fs-4 fw-bold">{{ formatRupiah(reportData.summary.paymentMethodTotals.transfer) }}</p>
@@ -130,7 +131,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'; // <-- Impor onMounted
+import { ref, onMounted } from 'vue';
 import reportService from '../services/reportService';
 
 const reportData = ref(null);
@@ -173,7 +174,6 @@ const generateReport = async () => {
 const formatRupiah = (number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number || 0);
 const formatDate = (dateString) => new Date(dateString).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
 
-// V-- JALANKAN OTOMATIS SAAT HALAMAN DIBUKA --V
 onMounted(() => {
   generateReport();
 });

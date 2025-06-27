@@ -1,3 +1,4 @@
+<!-- frontend/src/views/LoginView.vue -->
 <template>
   <div class="login-container">
     <div class="login-card">
@@ -50,7 +51,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'; // <-- Tambahkan onMounted & onUnmounted
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useAuthStore } from '../stores/auth.store';
 
 const authStore = useAuthStore();
@@ -61,7 +62,6 @@ const credentials = ref({
 const loading = ref(false);
 const errorMessage = ref('');
 
-// V-- LOGIKA UNTUK JAM REAL-TIME --V
 const currentTime = ref({ time: '', date: '' });
 let timeInterval = null;
 
@@ -72,17 +72,13 @@ function updateTime() {
 }
 
 onMounted(() => {
-  // Panggil sekali saat komponen dimuat
   updateTime();
-  // Set interval untuk update setiap detik
   timeInterval = setInterval(updateTime, 1000);
 });
 
 onUnmounted(() => {
-  // Hapus interval saat komponen dihancurkan untuk mencegah memory leak
   clearInterval(timeInterval);
 });
-// Akhir logika jam
 
 async function handleLogin() {
   loading.value = true;
@@ -98,7 +94,6 @@ async function handleLogin() {
 </script>
 
 <style scoped>
-/* V-- CSS BARU UNTUK ANIMASI DAN TAMPILAN --V */
 @keyframes gradient-animation {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
@@ -121,7 +116,6 @@ async function handleLogin() {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  /* Animasi Latar Belakang */
   background: linear-gradient(-45deg, #0f2027, #203a43, #2c5364, #23d5ab);
   background-size: 400% 400%;
   animation: gradient-animation 15s ease infinite;
@@ -133,10 +127,23 @@ async function handleLogin() {
   border: none;
   border-radius: 15px;
   box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.98); /* Sedikit lebih solid */
   backdrop-filter: blur(10px);
-  /* Animasi Form */
   animation: fadeInUp 0.8s ease-out;
+}
+
+/* V-- PERBAIKAN KONTRAS TEKS --V */
+.login-card .card-title {
+  color: #2c3e50; /* Warna biru gelap agar lebih tegas */
+}
+
+.login-card .text-muted {
+  color: #6c757d !important; /* Warna abu-abu standar yang lebih gelap */
+}
+
+.login-card .form-label {
+  color: #495057; /* Warna abu-abu gelap untuk label */
+  font-weight: 500;
 }
 
 .time-display {
@@ -144,5 +151,10 @@ async function handleLogin() {
   background-color: #f8f9fa;
   border-radius: 8px;
   border: 1px solid #dee2e6;
+}
+
+.time-display .fs-5 {
+  color: #212529; /* Warna hitam untuk waktu */
+  font-weight: 500;
 }
 </style>
