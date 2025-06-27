@@ -1,5 +1,5 @@
-import axios from 'axios';
-const apiClient = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL });
+// frontend/src/services/purchaseService.js
+import apiClient from './apiClient'; // <-- Impor klien terpusat
 
 export default {
   recordPurchase(purchaseData) {

@@ -1,21 +1,6 @@
 // frontend/src/services/userService.js
 
-import axios from 'axios';
-import { useAuthStore } from '../stores/auth.store';
-
-const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
-});
-
-// Fungsi helper untuk mendapatkan header dengan token otentikasi
-const getAuthHeaders = () => {
-  const authStore = useAuthStore();
-  const token = authStore.token;
-  if (token) {
-    return { Authorization: `Bearer ${token}` };
-  }
-  return {};
-};
+import apiClient from './apiClient'; // <-- Impor klien terpusat
 
 export default {
   /**
@@ -23,7 +8,8 @@ export default {
    * @returns {Promise}
    */
   getAllUsers() {
-    return apiClient.get('/users', { headers: getAuthHeaders() });
+    // Tidak perlu lagi menambahkan header secara manual
+    return apiClient.get('/users');
   },
 
   /**
@@ -32,7 +18,7 @@ export default {
    * @returns {Promise}
    */
   createUser(userData) {
-    return apiClient.post('/users', userData, { headers: getAuthHeaders() });
+    return apiClient.post('/users', userData);
   },
 
   /**
@@ -41,6 +27,6 @@ export default {
    * @returns {Promise}
    */
   deleteUser(id) {
-    return apiClient.delete(`/users/${id}`, { headers: getAuthHeaders() });
+    return apiClient.delete(`/users/${id}`);
   }
 };

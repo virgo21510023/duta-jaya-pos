@@ -1,9 +1,5 @@
 // frontend/src/services/reportService.js
-import axios from 'axios';
-
-const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
-});
+import apiClient from './apiClient'; // <-- Impor klien terpusat
 
 export default {
   /**

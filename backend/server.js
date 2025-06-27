@@ -20,6 +20,7 @@ const reportRoutes = require('./src/api/reports.routes');
 const authRoutes = require('./src/api/auth.routes');
 const purchaseRoutes = require('./src/api/purchases.routes');
 const userRoutes = require('./src/api/users.routes'); // <-- Impor rute baru
+const returnRoutes = require('./src/api/returns.routes');
 
 // 2. Inisialisasi Aplikasi & Middleware
 const app = express();
@@ -55,6 +56,7 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/purchases', purchaseRoutes);
 app.use('/api/users', userRoutes); // <-- Daftarkan rute baru
+app.use('/api/returns', returnRoutes);
 
 app.get('/', (req, res) => {
   res.send('🎉 Server Backend Duta Jaya POS Aktif!');

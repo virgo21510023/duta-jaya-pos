@@ -12,6 +12,8 @@ import PurchasingView from '../views/PurchasingView.vue';
 import LoginView from '../views/LoginView.vue';
 import TransactionHistoryView from '../views/TransactionHistoryView.vue';
 import UserManagementView from '../views/UserManagementView.vue';
+import ReturnView from '../views/ReturnView.vue'; // <-- Impor halaman baru
+
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -26,7 +28,7 @@ const router = createRouter({
     { path: '/reports', name: 'reports', component: ReportsView },
     { path: '/purchasing', name: 'purchasing', component: PurchasingView },
     { path: '/users', name: 'users', component: UserManagementView },
-    
+    { path: '/returns', name: 'returns', component: ReturnView },
     // Redirect semua path yang tidak cocok ke halaman utama
     { path: '/:pathMatch(.*)*', redirect: '/' }
   ],

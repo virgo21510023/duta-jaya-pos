@@ -19,7 +19,21 @@ const Transaction = sequelize.define('Transaction', {
   customer_name: {
     type: DataTypes.STRING
   },
-  // Kolom 'status' dihapus dari model
+  status: {
+    type: DataTypes.ENUM('completed', 'pending', 'cancelled'),
+    allowNull: false,
+    defaultValue: 'completed'
+  },
+  // V-- TAMBAHKAN DUA KOLOM BARU INI --V
+  transaction_type: {
+    type: DataTypes.ENUM('sale', 'return'),
+    allowNull: false,
+    defaultValue: 'sale'
+  },
+  original_transaction_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true // Bisa null karena tidak semua transaksi adalah retur
+  }
 }, {
   tableName: 'transactions'
 });
