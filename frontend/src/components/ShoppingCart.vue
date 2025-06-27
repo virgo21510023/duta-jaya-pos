@@ -1,46 +1,45 @@
 <!-- frontend/src/components/ShoppingCart.vue -->
 <template>
   <div class="shopping-cart-container d-flex flex-column h-100">
-    <!-- Input Nama Pelanggan -->
-    <div class="mb-3">
-      <label for="customer-name" class="form-label">Nama Pelanggan</label>
-      <input 
-        type="text" 
-        id="customer-name" 
-        class="form-control" 
-        :value="cartStore.customerName"
-        @input="cartStore.setCustomerName($event.target.value)"
-        placeholder="Masukkan nama pelanggan (opsional)"
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="mb-0">Keranjang Belanja</h5>
+      <button 
+        v-if="cartStore.items.length > 0" 
+        class="btn btn-outline-danger btn-sm" 
+        @click="clearCart"
+        title="Kosongkan Keranjang"
       >
+        <i class="fas fa-trash-alt me-1"></i> Kosongkan
+      </button>
     </div>
-    <hr>
     
-    <!-- Daftar Item -->
     <div class="cart-items flex-grow-1">
       <div v-if="!cartStore.items || cartStore.items.length === 0" class="text-center text-muted empty-cart">
         Keranjang masih kosong
       </div>
-
       <ul v-else class="list-group list-group-flush">
         <li v-for="item in cartStore.items" :key="item.id" class="list-group-item d-flex justify-content-between align-items-center">
           <div class="item-details">
-            <div class="fw-bold">{{ item.name || 'Nama Produk Error' }}</div>
-            <small>{{ formatRupiah(cartStore.calculatePriceForItem(item)) }} x {{ item.quantity }}</small>
+            <div class="fw-bold">{{ item.name }}</div>
+            <!-- V-- TAMPILKAN SATUAN DI SINI --V -->
+            <small>{{ formatRupiah(cartStore.calculatePriceForItem(item)) }} x {{ item.quantity }} {{ item.unit }}</small>
           </div>
-          
           <div class="item-controls d-flex align-items-center">
             <button class="btn btn-sm btn-outline-secondary" @click="cartStore.decrementQuantity(item.id)">-</button>
-            <span class="mx-2 quantity-text">{{ item.quantity }}</span>
+            <input 
+              type="number" 
+              class="form-control form-control-sm text-center mx-1" 
+              style="width: 60px;"
+              :value="item.quantity"
+              @change="cartStore.updateQuantity(item.id, $event.target.value)"
+            >
             <button class="btn btn-sm btn-outline-secondary" @click="cartStore.incrementQuantity(item.id)">+</button>
-            <button class="btn btn-sm btn-outline-danger ms-3" @click="cartStore.removeProduct(item.id)">
-              &times;
-            </button>
+            <button class="btn btn-sm btn-outline-danger ms-2" @click="cartStore.removeProduct(item.id)">&times;</button>
           </div>
         </li>
       </ul>
     </div>
 
-    <!-- Ringkasan & Total Belanja -->
     <div class="cart-summary mt-auto pt-3 border-top">
       <div class="summary-item d-flex justify-content-between">
         <span>Total Item</span>
@@ -51,7 +50,6 @@
         <span class="fw-bold text-success">{{ formatRupiah(cartStore.totalPrice) }}</span>
       </div>
       <div class="d-grid gap-2 mt-3">
-        <!-- Tombol Tunda Transaksi kita hapus dari emit dan dinonaktifkan permanen untuk sementara -->
         <button class="btn btn-warning" disabled title="Fitur sedang dalam perbaikan">Tunda Transaksi</button>
         <button class="btn btn-success btn-lg" @click="$emit('process-payment')" :disabled="cartStore.items.length === 0">PROSES PEMBAYARAN</button>
       </div>
@@ -61,10 +59,14 @@
 
 <script setup>
 import { useCartStore } from '../stores/cart.store';
-
 const cartStore = useCartStore();
-// Hanya emit process-payment
 const emit = defineEmits(['process-payment']);
+
+function clearCart() {
+  if (window.confirm('Apakah Anda yakin ingin mengosongkan seluruh keranjang belanja?')) {
+    cartStore.clearCart();
+  }
+}
 
 function formatRupiah(number) {
   if (typeof number !== 'number' || isNaN(number)) {

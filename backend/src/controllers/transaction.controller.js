@@ -5,7 +5,7 @@ const Transaction = require('../models/transaction.model');
 const TransactionDetail = require('../models/transaction_detail.model');
 const Product = require('../models/product.model');
 const PriceTier = require('../models/price_tier.model'); // Pastikan model ini diimpor
-const { Op } = require('sequelize');
+const { Op, fn, col, literal } = require('sequelize');
 
 // Fungsi untuk membuat transaksi yang sudah selesai
 exports.createTransaction = async (req, res) => {
@@ -35,12 +35,14 @@ exports.createTransaction = async (req, res) => {
       if (product.stock_quantity < item.quantity) {
         throw new Error(`Stok untuk ${product.name} tidak mencukupi.`);
       }
-      await product.decrement('stock_quantity', { by: item.quantity, transaction: t });
+      product.stock_quantity -= item.quantity;
+      await product.save({ transaction: t });
     }
     await t.commit();
     res.status(201).json({ message: 'Transaksi berhasil dibuat', transaction });
   } catch (error) {
     await t.rollback();
+    console.error('*** ERROR SAAT MEMBUAT TRANSAKSI ***:', error);
     res.status(500).json({ message: 'Transaksi gagal', error: error.message });
   }
 };
@@ -50,29 +52,24 @@ exports.getAllTransactions = async (req, res) => {
   try {
     const { page = 1, limit = 10, search = '', startDate, endDate } = req.query;
     const offset = (page - 1) * limit;
-
     let whereClause = { status: 'completed' };
-
     if (search) {
       whereClause[Op.or] = [
         { transaction_code: { [Op.like]: `%${search}%` } },
         { customer_name: { [Op.like]: `%${search}%` } }
       ];
     }
-
     if (startDate && endDate) {
       const endOfDay = new Date(endDate);
       endOfDay.setHours(23, 59, 59, 999);
       whereClause.createdAt = { [Op.between]: [new Date(startDate), endOfDay] };
     }
-
     const { count, rows } = await Transaction.findAndCountAll({
       where: whereClause,
       order: [['createdAt', 'DESC']],
       limit: parseInt(limit),
       offset: offset,
     });
-
     res.status(200).json({
       totalItems: count,
       transactions: rows,
@@ -84,8 +81,7 @@ exports.getAllTransactions = async (req, res) => {
   }
 };
 
-
-// Fungsi untuk mengambil detail satu transaksi berdasarkan ID numeriknya
+// V-- FUNGSI INI TELAH DIPERBAIKI --V
 exports.getTransactionById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -95,7 +91,7 @@ exports.getTransactionById = async (req, res) => {
           model: TransactionDetail,
           include: [{
             model: Product,
-            attributes: ['name', 'base_price'],
+            attributes: ['name', 'base_price', 'unit'], // Ambil 'unit' juga
             include: [{
               model: PriceTier,
               as: 'price_tiers',
@@ -109,14 +105,26 @@ exports.getTransactionById = async (req, res) => {
     
     const formattedTransaction = {
       ...transaction.toJSON(),
-      items: transaction.TransactionDetails.map(detail => ({
-        id: detail.product_id,
-        name: detail.Product.name,
-        quantity: detail.quantity,
-        base_price: detail.Product.base_price,
-        price_tiers: detail.Product.price_tiers || [],
-        price: detail.price_per_unit
-      }))
+      items: transaction.TransactionDetails.map(detail => {
+        if (!detail.Product) {
+          return {
+            id: detail.product_id,
+            name: 'PRODUK TELAH DIHAPUS',
+            quantity: detail.quantity,
+            price: detail.price_per_unit,
+            unit: ''
+          };
+        }
+        return {
+          id: detail.product_id,
+          name: detail.Product.name,
+          quantity: detail.quantity,
+          base_price: detail.Product.base_price,
+          price_tiers: detail.Product.price_tiers || [],
+          price: detail.price_per_unit,
+          unit: detail.Product.unit // Sertakan 'unit' di sini
+        };
+      })
     };
     delete formattedTransaction.TransactionDetails;
     res.status(200).json(formattedTransaction);
@@ -136,7 +144,7 @@ exports.getTransactionByCode = async (req, res) => {
           model: TransactionDetail,
           include: [{
             model: Product,
-            attributes: ['name', 'base_price'],
+            attributes: ['name', 'base_price', 'unit'], // Ambil 'unit' juga
             include: [{
               model: PriceTier,
               as: 'price_tiers',
@@ -155,7 +163,7 @@ exports.getTransactionByCode = async (req, res) => {
       ...transaction.toJSON(),
       items: transaction.TransactionDetails.map(detail => {
         if (!detail.Product) {
-          return { id: detail.product_id, name: 'PRODUK TELAH DIHAPUS', quantity: detail.quantity, price: detail.price_per_unit };
+          return { id: detail.product_id, name: 'PRODUK TELAH DIHAPUS', quantity: detail.quantity, price: detail.price_per_unit, unit: '' };
         }
         return {
           id: detail.product_id,
@@ -163,7 +171,8 @@ exports.getTransactionByCode = async (req, res) => {
           quantity: detail.quantity,
           base_price: detail.Product.base_price,
           price_tiers: detail.Product.price_tiers || [],
-          price: detail.price_per_unit
+          price: detail.price_per_unit,
+          unit: detail.Product.unit
         };
       })
     };

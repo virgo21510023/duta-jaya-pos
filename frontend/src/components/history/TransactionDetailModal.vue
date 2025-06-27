@@ -10,20 +10,11 @@
           </div>
           <div class="modal-body" v-if="transaction">
             <div class="row mb-3">
-              <div class="col-md-6">
-                <strong>Kode Transaksi:</strong> {{ transaction.transaction_code }}
-              </div>
-              <div class="col-md-6">
-                <strong>Tanggal:</strong> {{ formatDate(transaction.createdAt) }}
-              </div>
-              <div class="col-md-6">
-                <strong>Pelanggan:</strong> {{ transaction.customer_name || 'Umum' }}
-              </div>
-              <div class="col-md-6">
-                <strong>Metode Bayar:</strong> <span class="badge bg-secondary">{{ transaction.payment_method.toUpperCase() }}</span>
-              </div>
+              <div class="col-md-6"><strong>Kode Transaksi:</strong> {{ transaction.transaction_code }}</div>
+              <div class="col-md-6"><strong>Tanggal:</strong> {{ formatDate(transaction.createdAt) }}</div>
+              <div class="col-md-6"><strong>Pelanggan:</strong> {{ transaction.customer_name || 'Umum' }}</div>
+              <div class="col-md-6"><strong>Metode Bayar:</strong> <span class="badge bg-secondary">{{ transaction.payment_method.toUpperCase() }}</span></div>
             </div>
-            
             <hr>
             <h6>Daftar Barang:</h6>
             <div class="table-responsive">
@@ -39,7 +30,8 @@
                 <tbody>
                   <tr v-for="item in transaction.items" :key="item.id">
                     <td>{{ item.name }}</td>
-                    <td class="text-center">{{ item.quantity }}</td>
+                    <!-- V-- TAMPILKAN SATUAN DI SINI --V -->
+                    <td class="text-center">{{ item.quantity }} {{ item.unit }}</td>
                     <td class="text-end">{{ formatRupiah(item.price) }}</td>
                     <td class="text-end">{{ formatRupiah(item.price * item.quantity) }}</td>
                   </tr>
@@ -47,7 +39,7 @@
               </table>
             </div>
           </div>
-          <div class="modal-footer d-flex justify-content-between align-items-center">
+          <div class="modal-footer d-flex justify-content-between align-items-center" v-if="transaction">
              <h5 class="mb-0">Total: <span class="text-success fw-bold">{{ formatRupiah(transaction.total_amount) }}</span></h5>
             <button type="button" class="btn btn-secondary" @click="$emit('close')">Tutup</button>
           </div>

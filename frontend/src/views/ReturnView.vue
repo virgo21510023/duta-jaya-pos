@@ -2,7 +2,7 @@
 <template>
   <div class="container-fluid mt-4">
     <div class="row">
-      <!-- V-- KOLOM KIRI: DAFTAR TRANSAKSI --V -->
+      <!-- Kolom Kiri: Daftar Transaksi -->
       <div class="col-md-7">
         <div class="card">
           <div class="card-header">
@@ -55,7 +55,7 @@
         </div>
       </div>
 
-      <!-- V-- KOLOM KANAN: DETAIL RETUR --V -->
+      <!-- Kolom Kanan: Detail Retur -->
       <div class="col-md-5">
         <div class="card">
           <div class="card-header">
@@ -120,8 +120,11 @@ const returnItems = ref([]);
 const returnReason = ref('');
 const isProcessing = ref(false);
 
-const getTodayDate = () => new Date().toISOString().split('T')[0];
-const filters = ref({ startDate: getTodayDate(), endDate: getTodayDate() });
+// V-- PERBAIKAN UTAMA: SECARA DEFAULT, FILTER DIBUAT KOSONG --V
+const filters = ref({ 
+  startDate: '', 
+  endDate: '' 
+});
 
 const isReturnValid = computed(() => {
   return selectedTransaction.value && returnItems.value.some(item => item.return_quantity > 0 && item.return_quantity <= item.original_quantity);
@@ -140,7 +143,7 @@ async function fetchTransactions() {
   try {
     const response = await transactionService.getAllTransactions({
         page: 1,
-        limit: 200, // Ambil hingga 200 transaksi terakhir yang cocok
+        limit: 200,
         startDate: filters.value.startDate,
         endDate: filters.value.endDate
     });
@@ -155,7 +158,7 @@ async function fetchTransactions() {
 
 function resetFilters() {
   filters.value = { startDate: '', endDate: '' };
-  fetchTransactions();
+  // fetchTransactions() akan otomatis terpicu oleh watcher
 }
 
 async function selectTransaction(transactionId) {

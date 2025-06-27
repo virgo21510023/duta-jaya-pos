@@ -88,12 +88,14 @@ function closePaymentModal() {
 }
 
 async function handleProcessTransaction(paymentData) {
+  // V-- PERBAIKAN UTAMA: MENAMBAHKAN 'unit' KE DALAM PAYLOAD --V
   const itemsWithFinalPrice = cartStore.items.map(item => ({
     id: item.id,
     name: item.name,
     quantity: item.quantity,
     price: cartStore.calculatePriceForItem(item),
-    base_price: item.base_price
+    base_price: item.base_price,
+    unit: item.unit // <-- 'unit' sekarang disertakan
   }));
 
   const transactionPayload = {
@@ -118,6 +120,7 @@ async function handleProcessTransaction(paymentData) {
     cartStore.clearCart();
     lastTransactionForPrint.value = null;
     
+    // Muat ulang daftar produk untuk update stok
     await fetchProducts();
 
   } catch (error) {
