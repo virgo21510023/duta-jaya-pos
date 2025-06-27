@@ -1,10 +1,16 @@
 // frontend/src/services/productService.js
 
-import apiClient from './apiClient'; // <-- Impor klien terpusat
+import apiClient from './apiClient';
 
 export default {
-  getProducts() {
-    return apiClient.get('/products');
+  /**
+   * Mengambil data produk dari backend.
+   * @param {object} params - Opsional. Objek berisi { page, limit } untuk paginasi.
+   * @returns {Promise}
+   */
+  getProducts(params = {}) {
+    // Jika params kosong, backend akan menggunakan nilai defaultnya.
+    return apiClient.get('/products', { params });
   },
 
   createProduct(productData) {

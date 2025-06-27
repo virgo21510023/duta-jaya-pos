@@ -1,13 +1,16 @@
+<!-- frontend/src/views/ReturnView.vue -->
 <template>
   <div class="container mt-4">
     <h1 class="mb-3">Retur Barang</h1>
 
+    <!-- Filter dan Daftar Transaksi -->
     <div class="card">
       <div class="card-header">
         <h5>1. Pilih Transaksi yang Akan Diretur</h5>
       </div>
       <div class="card-body">
         <p class="text-muted">Tampilkan transaksi yang sudah selesai untuk dipilih.</p>
+        <!-- Filter Tanggal -->
         <div class="row g-3 align-items-end mb-3">
           <div class="col-md-5">
             <label for="startDate" class="form-label">Tanggal Mulai</label>
@@ -25,6 +28,7 @@
           </div>
         </div>
         
+        <!-- Tabel Daftar Transaksi -->
         <div class="table-responsive">
           <table class="table table-hover">
             <thead>
@@ -58,7 +62,7 @@
       </div>
     </div>
 
-    <!-- V-- PERBAIKAN UTAMA: MENAMBAHKAN :key --V -->
+    <!-- Bagian Detail Item Retur -->
     <div v-if="selectedTransaction" :key="selectedTransaction.id" class="card mt-4">
       <div class="card-header">
         <h5>2. Tentukan Jumlah Item yang Diretur</h5>
@@ -121,17 +125,20 @@ const isReturnValid = computed(() => {
   return selectedTransaction.value && returnItems.value.some(item => item.return_quantity > 0 && item.return_quantity <= item.original_quantity);
 });
 
+// V-- FUNGSI INI TELAH DIPERBAIKI --V
 async function fetchTransactions() {
   loading.value = true;
   error.value = null;
   try {
-    const response = await transactionService.getAllTransactions(); 
-    const startDate = new Date(filters.value.startDate).setHours(0,0,0,0);
-    const endDate = new Date(filters.value.endDate).setHours(23,59,59,999);
-    transactions.value = response.data.filter(t => {
-      const trxDate = new Date(t.createdAt);
-      return trxDate >= startDate && trxDate <= endDate;
+    // Panggil API dengan parameter filter yang sesuai
+    const response = await transactionService.getAllTransactions({
+        page: 1,
+        limit: 100, // Ambil hingga 100 transaksi terakhir yang cocok
+        startDate: filters.value.startDate,
+        endDate: filters.value.endDate
     });
+    // Akses array 'transactions' dari dalam objek respons
+    transactions.value = response.data.transactions; 
   } catch (err) {
     error.value = 'Gagal memuat riwayat transaksi.';
     console.error(err);
@@ -144,7 +151,6 @@ async function selectTransaction(transactionId) {
   try {
     const response = await transactionService.getTransactionById(transactionId);
     selectedTransaction.value = response.data;
-    
     returnItems.value = selectedTransaction.value.items.map(item => ({
       id: item.id,
       name: item.name,
@@ -153,8 +159,7 @@ async function selectTransaction(transactionId) {
       return_quantity: 0
     }));
   } catch (err) {
-    console.error('ERROR di dalam selectTransaction:', err);
-    alert('Gagal memuat detail transaksi. Cek console (F12) untuk detail error.');
+    alert('Gagal memuat detail transaksi.');
   }
 }
 

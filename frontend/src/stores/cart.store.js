@@ -9,6 +9,10 @@ export const useCartStore = defineStore('cart', () => {
   const customerName = ref('');
 
   // === HELPERS ===
+  /**
+   * Menghitung harga per unit yang berlaku untuk sebuah item
+   * berdasarkan kuantitasnya saat ini. Dibuat sangat defensif.
+   */
   function calculatePriceForItem(item) {
     if (!item || typeof item.id === 'undefined') return 0;
 

@@ -66,10 +66,8 @@
         </div>
       </div>
       
-      <!-- V-- PERBAIKAN PADA KARTU METODE PEMBAYARAN --V -->
       <div class="row mb-4">
         <div class="col-md-4">
-          <!-- Mengganti bg-light dengan card biasa yang akan otomatis beradaptasi -->
           <div class="card">
             <div class="card-body">
               <h6 class="card-title text-muted">TOTAL TUNAI (CASH)</h6>
@@ -115,7 +113,7 @@
                   <td>{{ formatDate(trx.createdAt) }}</td>
                   <td>{{ trx.transaction_code }}</td>
                   <td>{{ trx.customer_name || 'Umum' }}</td>
-                  <td>{{ trx.payment_method.toUpperCase() }}</td>
+                  <td><span class="badge bg-secondary">{{ trx.payment_method.toUpperCase() }}</span></td>
                   <td class="text-end">{{ formatRupiah(trx.total_amount) }}</td>
                 </tr>
                  <tr v-if="reportData.transactions.length === 0">

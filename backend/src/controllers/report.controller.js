@@ -5,7 +5,7 @@ const TransactionDetail = require('../models/transaction_detail.model');
 const Product = require('../models/product.model');
 const { Op, fn, col, literal } = require('sequelize');
 
-// Fungsi untuk Laporan Penjualan (Telah Dimodifikasi)
+// Fungsi untuk Laporan Penjualan (Tidak berubah, sudah benar)
 exports.getSalesReport = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
@@ -15,51 +15,40 @@ exports.getSalesReport = async (req, res) => {
     const endOfDay = new Date(endDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    // Query untuk ringkasan umum
+    const whereClause = {
+      status: 'completed',
+      createdAt: { [Op.between]: [new Date(startDate), endOfDay] }
+    };
+
     const summary = await Transaction.findOne({
       attributes: [
         [fn('SUM', col('total_amount')), 'totalRevenue'],
         [fn('COUNT', col('id')), 'totalTransactions']
       ],
-      where: { createdAt: { [Op.between]: [new Date(startDate), endOfDay] } },
-      raw: true
+      where: whereClause, raw: true
     });
 
-    // Query baru untuk ringkasan per metode pembayaran
     const paymentMethodSummary = await Transaction.findAll({
-        attributes: [
-            'payment_method',
-            [fn('SUM', col('total_amount')), 'total']
-        ],
-        where: {
-            createdAt: {
-                [Op.between]: [new Date(startDate), endOfDay]
-            }
-        },
-        group: ['payment_method'],
-        raw: true
+      attributes: [ 'payment_method', [fn('SUM', col('total_amount')), 'total'] ],
+      where: whereClause, group: ['payment_method'], raw: true
     });
 
-    // Proses hasil ringkasan metode pembayaran menjadi objek yang mudah digunakan
     const paymentTotals = { cash: 0, qris: 0, transfer: 0 };
     paymentMethodSummary.forEach(item => {
-        if (paymentTotals.hasOwnProperty(item.payment_method)) {
-            paymentTotals[item.payment_method] = parseFloat(item.total);
-        }
+      if (paymentTotals.hasOwnProperty(item.payment_method)) {
+        paymentTotals[item.payment_method] = parseFloat(item.total);
+      }
     });
 
-    // Query untuk daftar transaksi detail
     const transactions = await Transaction.findAll({
-      where: { createdAt: { [Op.between]: [new Date(startDate), endOfDay] } },
-      order: [['createdAt', 'DESC']]
+      where: whereClause, order: [['createdAt', 'DESC']]
     });
 
-    // Kirim semua data dalam satu respons
     res.status(200).json({
       summary: {
         totalRevenue: parseFloat(summary.totalRevenue) || 0,
         totalTransactions: summary.totalTransactions || 0,
-        paymentMethodTotals: paymentTotals // Data baru ditambahkan di sini
+        paymentMethodTotals: paymentTotals
       },
       transactions
     });
@@ -68,7 +57,7 @@ exports.getSalesReport = async (req, res) => {
   }
 };
 
-// Fungsi untuk Laporan Laba-Rugi (Tidak berubah)
+// V-- FUNGSI INI TELAH DIPERBAIKI --V
 exports.getProfitLossReport = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
@@ -87,7 +76,11 @@ exports.getProfitLossReport = async (req, res) => {
         {
           model: Transaction,
           attributes: [],
-          where: { createdAt: { [Op.between]: [new Date(startDate), endOfDay] } }
+          // PERBAIKAN: Pastikan hanya menghitung HPP dari transaksi yang sudah 'completed'
+          where: {
+            status: 'completed',
+            createdAt: { [Op.between]: [new Date(startDate), endOfDay] }
+          }
         }
       ],
       raw: true
@@ -99,7 +92,7 @@ exports.getProfitLossReport = async (req, res) => {
   }
 };
 
-// Fungsi untuk Data Dashboard (Tidak berubah)
+// Fungsi Dashboard (Tidak berubah)
 exports.getDashboardStats = async (req, res) => {
   try {
     const todayStart = new Date();
@@ -112,7 +105,7 @@ exports.getDashboardStats = async (req, res) => {
         [fn('SUM', col('total_amount')), 'totalRevenue'],
         [fn('COUNT', col('id')), 'totalTransactions']
       ],
-      where: { createdAt: { [Op.between]: [todayStart, todayEnd] } },
+      where: { status: 'completed', createdAt: { [Op.between]: [todayStart, todayEnd] } },
       raw: true
     });
 
@@ -120,7 +113,7 @@ exports.getDashboardStats = async (req, res) => {
       attributes: [ 'product_id', [fn('SUM', col('quantity')), 'totalQuantitySold'] ],
       include: [
         { model: Product, attributes: ['name'] },
-        { model: Transaction, attributes: [], where: { createdAt: { [Op.between]: [todayStart, todayEnd] } } }
+        { model: Transaction, attributes: [], where: { status: 'completed', createdAt: { [Op.between]: [todayStart, todayEnd] } } }
       ],
       group: ['product_id', 'Product.id'],
       order: [[literal('totalQuantitySold'), 'DESC']],

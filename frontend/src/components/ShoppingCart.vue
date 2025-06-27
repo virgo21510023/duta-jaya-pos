@@ -1,5 +1,7 @@
+<!-- frontend/src/components/ShoppingCart.vue -->
 <template>
   <div class="shopping-cart-container d-flex flex-column h-100">
+    <!-- Input Nama Pelanggan -->
     <div class="mb-3">
       <label for="customer-name" class="form-label">Nama Pelanggan</label>
       <input 
@@ -13,6 +15,7 @@
     </div>
     <hr>
     
+    <!-- Daftar Item -->
     <div class="cart-items flex-grow-1">
       <div v-if="!cartStore.items || cartStore.items.length === 0" class="text-center text-muted empty-cart">
         Keranjang masih kosong
@@ -37,6 +40,7 @@
       </ul>
     </div>
 
+    <!-- Ringkasan & Total Belanja -->
     <div class="cart-summary mt-auto pt-3 border-top">
       <div class="summary-item d-flex justify-content-between">
         <span>Total Item</span>
@@ -47,6 +51,8 @@
         <span class="fw-bold text-success">{{ formatRupiah(cartStore.totalPrice) }}</span>
       </div>
       <div class="d-grid gap-2 mt-3">
+        <!-- Tombol Tunda Transaksi kita hapus dari emit dan dinonaktifkan permanen untuk sementara -->
+        <button class="btn btn-warning" disabled title="Fitur sedang dalam perbaikan">Tunda Transaksi</button>
         <button class="btn btn-success btn-lg" @click="$emit('process-payment')" :disabled="cartStore.items.length === 0">PROSES PEMBAYARAN</button>
       </div>
     </div>

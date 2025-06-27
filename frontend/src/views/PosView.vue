@@ -6,7 +6,6 @@
       <div class="col-md-7">
         <div class="card">
           <div class="card-body">
-            <!-- V-- MELEMPAR DATA KE KOMPONEN ANAK --V -->
             <ProductSearch 
               :products="products"
               :loading="loading"
@@ -27,7 +26,7 @@
     </div>
   </div>
 
-  <!-- Komponen Modal dan Nota -->
+  <!-- Komponen Modal Pembayaran dan Nota -->
   <PaymentModal 
     v-if="isPaymentModalOpen"
     :show="isPaymentModalOpen" 
@@ -49,23 +48,24 @@ import PaymentModal from '../components/PaymentModal.vue';
 import ReceiptTemplate from '../components/pos/ReceiptTemplate.vue';
 import { useCartStore } from '../stores/cart.store';
 import transactionService from '../services/transactionService';
-import productService from '../services/productService'; // <-- Impor service produk
+import productService from '../services/productService';
 
 const cartStore = useCartStore();
 const isPaymentModalOpen = ref(false);
 const lastTransactionForPrint = ref(null);
 
-// V-- STATE DAN LOGIKA FETCH DIPINDAHKAN KE SINI --V
+// State untuk data produk
 const products = ref([]);
 const loading = ref(true);
 const error = ref(null);
 
+// Fungsi untuk mengambil semua data produk
 async function fetchProducts() {
   try {
     loading.value = true;
     error.value = null;
-    const response = await productService.getProducts();
-    products.value = response.data;
+    const response = await productService.getProducts({ page: 1, limit: 9999 }); 
+    products.value = response.data.products;
   } catch (err) {
     error.value = 'Gagal memuat daftar produk.';
     console.error(err);
@@ -74,7 +74,7 @@ async function fetchProducts() {
   }
 }
 
-// -- Fungsi-fungsi untuk Pembayaran --
+// Fungsi-fungsi untuk Pembayaran
 function openPaymentModal() {
   if (cartStore.items.length === 0) {
     alert('Keranjang belanja masih kosong!');
@@ -117,8 +117,7 @@ async function handleProcessTransaction(paymentData) {
 
     cartStore.clearCart();
     lastTransactionForPrint.value = null;
-
-    // V-- MUAT ULANG DATA PRODUK SETELAH TRANSAKSI BERHASIL --V
+    
     await fetchProducts();
 
   } catch (error) {
@@ -127,7 +126,7 @@ async function handleProcessTransaction(paymentData) {
   }
 }
 
-// -- Lifecycle Hook --
+// Lifecycle Hook
 onMounted(() => {
   fetchProducts();
 });

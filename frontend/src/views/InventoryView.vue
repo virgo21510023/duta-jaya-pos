@@ -5,15 +5,22 @@
       <h1>Daftar Stok Barang</h1>
       <button class="btn btn-primary" @click="openAddModal">Tambah Produk Baru</button>
     </div>
-    <div class="mb-3">
-      <input type="text" class="form-control" placeholder="Cari nama barang atau kode..." v-model="searchQuery">
+    <div class="row mb-3">
+      <div class="col-md-9">
+        <input type="text" class="form-control" placeholder="Cari nama barang atau kode..." v-model="searchQuery">
+      </div>
+      <div class="col-md-3">
+        <select class="form-select" v-model="pagination.itemsPerPage">
+          <option value="10">10 per halaman</option>
+          <option value="25">25 per halaman</option>
+          <option value="50">50 per halaman</option>
+        </select>
+      </div>
     </div>
 
     <!-- Loading dan Error State -->
     <div v-if="loading" class="text-center mt-5">
-      <div class="spinner-border" role="status">
-        <span class="visually-hidden">Memuat...</span>
-      </div>
+      <div class="spinner-border" role="status"><span class="visually-hidden">Memuat...</span></div>
     </div>
     <div v-if="error" class="alert alert-danger">{{ error }}</div>
 
@@ -36,7 +43,6 @@
             <td>{{ product.product_code || '-' }}</td>
             <td>{{ product.name }}</td>
             <td>{{ product.grade || 'N/A' }}</td>
-            <!-- V-- PERBAIKAN TAMPILAN STOK --V -->
             <td>{{ parseInt(product.stock_quantity) }}</td>
             <td>{{ product.unit }}</td>
             <td>{{ formatRupiah(product.base_price) }}</td>
@@ -51,8 +57,23 @@
         </tbody>
       </table>
     </div>
+    
+    <!-- Kontrol Paginasi -->
+    <nav v-if="pagination.totalPages > 1 && !loading && !searchQuery" aria-label="Page navigation">
+      <ul class="pagination justify-content-center">
+        <li class="page-item" :class="{ disabled: pagination.currentPage === 1 }">
+          <a class="page-link" href="#" @click.prevent="goToPage(pagination.currentPage - 1)">Previous</a>
+        </li>
+        <li class="page-item" v-for="page in pagination.totalPages" :key="page" :class="{ active: page === pagination.currentPage }">
+          <a class="page-link" href="#" @click.prevent="goToPage(page)">{{ page }}</a>
+        </li>
+        <li class="page-item" :class="{ disabled: pagination.currentPage === pagination.totalPages }">
+          <a class="page-link" href="#" @click.prevent="goToPage(pagination.currentPage + 1)">Next</a>
+        </li>
+      </ul>
+    </nav>
 
-    <!-- Modal Bootstrap untuk Form Tambah/Edit -->
+    <!-- Modal Form -->
     <div class="modal fade" :class="{ 'd-block show': isModalOpen }" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
@@ -62,7 +83,6 @@
           </div>
           <div class="modal-body">
             <form @submit.prevent="handleFormSubmit">
-              <!-- Form utama untuk detail produk -->
               <div class="row">
                 <div class="col-md-6">
                   <div class="mb-3"><label for="code" class="form-label">Kode Barang</label><input type="text" class="form-control" id="code" v-model="newProduct.product_code"></div>
@@ -76,28 +96,15 @@
                   <div class="mb-3"><label for="price" class="form-label">Harga Jual Dasar</label><input type="text" class="form-control" id="price" v-model="formattedBasePrice" required></div>
                 </div>
               </div>
-
-              <!-- Bagian untuk Harga Bertingkat -->
               <div v-if="editingProductId" class="mt-4">
-                <hr>
-                <h5>Pengelolaan Harga Bertingkat</h5>
-                <p class="text-muted small">Harga akan otomatis mengikuti tingkatan ini di halaman kasir. Harga Jual di atas akan menjadi harga dasar.</p>
+                <hr><h5>Pengelolaan Harga Bertingkat</h5>
                 <div v-for="(tier, index) in newProduct.price_tiers" :key="index" class="row align-items-center mb-2">
-                  <div class="col-5">
-                    <label class="form-label small">Kuantitas Minimal</label>
-                    <input type="number" step="0.01" class="form-control" v-model.number="tier.min_qty" placeholder="Contoh: 6">
-                  </div>
-                  <div class="col-5">
-                    <label class="form-label small">Harga per Unit</label>
-                    <input type="number" step="0.01" class="form-control" v-model.number="tier.price" placeholder="Contoh: 32000">
-                  </div>
-                  <div class="col-2 pt-4">
-                    <button type="button" class="btn btn-danger btn-sm" @click="removeTier(index)">Hapus</button>
-                  </div>
+                  <div class="col-5"><label class="form-label small">Kuantitas Minimal</label><input type="number" step="0.01" class="form-control" v-model.number="tier.min_qty"></div>
+                  <div class="col-5"><label class="form-label small">Harga per Unit</label><input type="number" step="0.01" class="form-control" v-model.number="tier.price"></div>
+                  <div class="col-2 pt-4"><button type="button" class="btn btn-danger btn-sm" @click="removeTier(index)">Hapus</button></div>
                 </div>
                 <button type="button" class="btn btn-outline-primary btn-sm mt-2" @click="addTier">Tambah Tingkatan Harga</button>
               </div>
-
               <div class="modal-footer mt-4">
                 <button type="button" class="btn btn-secondary" @click="closeModal">Batal</button>
                 <button type="submit" class="btn btn-success">Simpan Perubahan</button>
@@ -112,24 +119,39 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import productService from '../services/productService';
 
+// State untuk data produk
+const allProducts = ref([]);
 const products = ref([]);
 const loading = ref(true);
 const error = ref(null);
-const isModalOpen = ref(false);
+
+// State untuk paginasi
+const pagination = ref({
+  currentPage: 1,
+  totalPages: 1,
+  totalItems: 0,
+  itemsPerPage: 10
+});
+
+// State untuk pencarian
 const searchQuery = ref('');
-const unitOptions = ref([]);
-const gradeOptions = ref([]);
+
+// State untuk modal dan form
+const isModalOpen = ref(false);
 const newProduct = ref({});
 const editingProductId = ref(null);
+const unitOptions = ref([]);
+const gradeOptions = ref([]);
 
+// Computed Properties
 const modalTitle = computed(() => editingProductId.value ? 'Edit Produk' : 'Tambah Produk Baru');
 
 const filteredProducts = computed(() => {
   if (!searchQuery.value) return products.value;
-  return products.value.filter(product =>
+  return allProducts.value.filter(product =>
     product.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
     (product.product_code && product.product_code.toLowerCase().includes(searchQuery.value.toLowerCase()))
   );
@@ -148,11 +170,21 @@ const formattedBasePrice = computed({
   set: (value) => { newProduct.value.base_price = parseRupiah(value); }
 });
 
-async function fetchProducts() {
+// Fungsi Logika Utama
+async function fetchProducts(isInitialLoad = false) {
   try {
     loading.value = true;
-    const response = await productService.getProducts();
-    products.value = response.data;
+    const response = await productService.getProducts({
+      page: pagination.value.currentPage,
+      limit: pagination.value.itemsPerPage
+    });
+    products.value = response.data.products;
+    pagination.value.totalPages = response.data.totalPages;
+    pagination.value.totalItems = response.data.totalItems;
+    if (isInitialLoad) {
+      const allDataResponse = await productService.getProducts({ page: 1, limit: response.data.totalItems || 9999 });
+      allProducts.value = allDataResponse.data.products;
+    }
     error.value = null;
   } catch (err) {
     error.value = 'Gagal memuat data dari server.';
@@ -161,19 +193,17 @@ async function fetchProducts() {
   }
 }
 
-async function fetchUniqueUnits() {
-  try {
-    const response = await productService.getUnits();
-    unitOptions.value = response.data;
-  } catch (err) { console.error('Gagal mengambil satuan:', err); }
+function goToPage(page) {
+  if (page >= 1 && page <= pagination.value.totalPages) {
+    pagination.value.currentPage = page;
+  }
 }
 
-async function fetchUniqueGrades() {
-  try {
-    const response = await productService.getGrades();
-    gradeOptions.value = response.data;
-  } catch (err) { console.error('Gagal mengambil grade:', err); }
-}
+watch(() => pagination.value.currentPage, () => fetchProducts());
+watch(() => pagination.value.itemsPerPage, () => {
+  pagination.value.currentPage = 1;
+  fetchProducts();
+});
 
 function openAddModal() {
   editingProductId.value = null;
@@ -183,10 +213,7 @@ function openAddModal() {
 
 function openEditModal(product) {
   editingProductId.value = product.id;
-  newProduct.value = { 
-    ...product, 
-    price_tiers: product.price_tiers ? JSON.parse(JSON.stringify(product.price_tiers)) : [] 
-  };
+  newProduct.value = { ...product, price_tiers: product.price_tiers ? JSON.parse(JSON.stringify(product.price_tiers)) : [] };
   isModalOpen.value = true;
 }
 
@@ -200,37 +227,32 @@ async function handleFormSubmit() {
     if (editingProductId.value) {
       await productService.updateProduct(editingProductId.value, newProduct.value);
       await productService.managePriceTiers(editingProductId.value, newProduct.value.price_tiers);
-      alert('Produk dan tingkatan harga berhasil diperbarui!');
+      alert('Produk berhasil diperbarui!');
     } else {
       await productService.createProduct(newProduct.value);
       alert('Produk baru berhasil ditambahkan!');
     }
     closeModal();
-    await fetchProducts();
-    await fetchUniqueUnits();
-    await fetchUniqueGrades();
+    await fetchProducts(true);
   } catch (err) {
     alert('Gagal menyimpan produk.');
-    console.error(err);
   }
 }
 
 async function confirmDelete(product) {
-  if (window.confirm(`Apakah Anda yakin ingin menghapus "${product.name}"?`)) {
+  if (window.confirm(`Yakin ingin menghapus "${product.name}"?`)) {
     try {
       await productService.deleteProduct(product.id);
       alert('Produk berhasil dihapus.');
-      await fetchProducts();
+      await fetchProducts(true);
     } catch (err) {
-      alert(`Gagal menghapus produk: ${err.response?.data?.message || err.message}`);
+      alert('Gagal menghapus produk.');
     }
   }
 }
 
 function addTier() {
-  if (!newProduct.value.price_tiers) {
-    newProduct.value.price_tiers = [];
-  }
+  if (!newProduct.value.price_tiers) newProduct.value.price_tiers = [];
   newProduct.value.price_tiers.push({ min_qty: 0, price: 0 });
 }
 
@@ -238,18 +260,7 @@ function removeTier(index) {
   newProduct.value.price_tiers.splice(index, 1);
 }
 
-onMounted(async () => {
-  await fetchProducts();
-  await fetchUniqueUnits();
-  await fetchUniqueGrades();
+onMounted(() => {
+  fetchProducts(true);
 });
 </script>
-
-<style scoped>
-.table td {
-  vertical-align: middle;
-}
-.modal.d-block {
-  display: block;
-}
-</style>

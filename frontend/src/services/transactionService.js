@@ -1,13 +1,14 @@
 // frontend/src/services/transactionService.js
-import apiClient from './apiClient'; // <-- Impor klien terpusat
+import apiClient from './apiClient';
 
 export default {
   createTransaction(transactionData) {
     return apiClient.post('/transactions', transactionData);
   },
 
-  getAllTransactions() {
-    return apiClient.get('/transactions');
+  // V-- FUNGSI INI TELAH DIPERBARUI --V
+  getAllTransactions(params = {}) {
+    return apiClient.get('/transactions', { params });
   },
 
   getTransactionById(id) {
